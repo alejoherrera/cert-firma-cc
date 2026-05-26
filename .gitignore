@@ -1,0 +1,27 @@
+# PII y datos institucionales: jamas commitear
+data/input/
+data/output/
+data/participantes*.csv
+data/participantes*.xlsx
+
+# Credenciales y tokens
+*.json
+!pyproject.toml
+*.pem
+*.key
+credentials*
+token*
+.env*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# OS
+.DS_Store
+Thumbs.db
