@@ -18,18 +18,25 @@ cert-firma-cc/
   CONSTITUTION.md          # autoridad maxima del proyecto
   CLAUDE.md                # este archivo
   pyproject.toml           # dependencias + semver
+  iniciar.bat              # launcher Windows de la app (doble-click)
+  app/
+    app.py                 # UI Streamlit (v0.3.0+) — wizard 4 pasos
+  scripts/                 # motor CLI (la app los importa)
+    bajar_certificados.py  # Drive readonly -> data/input/
+    extraer_campos.py      # parser PyMuPDF por anchor strings
+    smoke_extractor.py     # valida extractor contra 1 PDF real
+    calcular_hash.py       # string canonico v1 + SHA-256
+    estampar.py            # overlay leyenda+hash+QR sobre PDF
+    generar_acta.py        # orquestador end-to-end del lote
+    generar_pdf_acta.py    # PDF tabular del acta (firmable BCCR)
+    generar_excel_acta.py  # xlsx tabular del acta (revision admin)
+    verificar.py           # self-verifica un PDF estampado
   docs/
     specs/                 # spec por feature (R36)
-    architecture/
-      app_map.md           # mapa del pipeline (R42)
+    architecture/          # ADRs + app_map (R42)
   data/                    # gitignored todo lo que vive aca
     input/                 # copias locales de PDFs originales (NUNCA al git)
     output/                # PDFs estampados + listados + acta data
-    participantes.csv      # nombre,cedula,curso (PII, gitignored)
-  scripts/
-    bajar_certificados.py  # Drive readonly -> data/input/
-    generar_acta.py        # core pipeline
-    smoke_extractor.py     # valida extractor contra 1 PDF real
 ```
 
 ## Reglas operativas
