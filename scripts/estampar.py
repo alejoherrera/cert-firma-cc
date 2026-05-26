@@ -46,11 +46,15 @@ def construir_qr_png(payload: str) -> bytes:
 
 
 def construir_payload_qr(campos: dict, hash_hex: str, hash_version: int) -> str:
-    """Payload: nombre + curso + hash + version. JSON estable, sin espacios."""
+    """Payload compacto: nombre + hash + version.
+
+    El curso NO va aca para mantener el QR liviano (~120 chars). En v0.2.1 se
+    probo incluir el curso y el QR se satura en lectores moviles. El curso
+    sigue visible en el cert impreso (no se pierde informacion).
+    """
     payload = {
         'v': hash_version,
         'nombre': campos.get('nombre', ''),
-        'curso': campos.get('curso', ''),
         'hash': hash_hex,
     }
     return json.dumps(payload, ensure_ascii=False, separators=(',', ':'))
