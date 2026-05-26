@@ -120,7 +120,7 @@ def main():
                 log(f"[WARN] Colision de slug, usando: {slug}")
 
             out_pdf = lote_dir / f'{slug}.pdf'
-            estampar_acta_firmada(pdf, out_pdf, h)
+            estampar_acta_firmada(pdf, out_pdf, h, d, hash_version=HASH_VERSION)
 
             registros.append({
                 'nro': len(registros) + 1,
