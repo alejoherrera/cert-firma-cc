@@ -67,6 +67,34 @@ def _listar_subcarpetas_drive(service, parent_id: str):
     return resp.get('files', [])
 
 
+def _subcarpetas_con_count(service, parent_id: str):
+    """Devuelve lista de subcarpetas con count de PDFs por cada una.
+
+    Resultado: [{'name': ..., 'id': ..., 'count': N}, ...]
+    Ordenado por count descendente (las que tienen PDFs primero).
+    """
+    subs = _listar_subcarpetas_drive(service, parent_id)
+    resultado = []
+    for s in subs:
+        try:
+            pdfs = listar_pdfs(service, s['id'])
+            resultado.append({'name': s['name'], 'id': s['id'], 'count': len(pdfs)})
+        except Exception:
+            resultado.append({'name': s['name'], 'id': s['id'], 'count': -1})
+    resultado.sort(key=lambda x: (-x['count'], x['name']))
+    return resultado
+
+
+def _cuenta_drive(service) -> str:
+    """Devuelve el correo de la cuenta autenticada en Drive."""
+    try:
+        info = service.about().get(fields='user(emailAddress,displayName)').execute()
+        u = info.get('user', {})
+        return u.get('emailAddress', '(desconocido)')
+    except Exception:
+        return '(desconocido)'
+
+
 def _bajar_lote_a_input(service, subcarpeta_id: str):
     """Baja todos los PDFs de la subcarpeta a data/input/, sobreescribiendo."""
     INPUT_BASE.mkdir(parents=True, exist_ok=True)
@@ -222,7 +250,7 @@ with col2:
 
 st.divider()
 
-# Sidebar: estado de conexion
+# Sidebar: estado de conexion (auto-conecta al cargar)
 with st.sidebar:
     st.subheader("Estado")
     if not TOKEN_FILE.exists():
@@ -233,18 +261,18 @@ with st.sidebar:
             "Eso abrira el flujo OAuth en el navegador."
         )
         st.stop()
-    else:
-        st.success("Token CGR detectado")
 
-    if st.button("Conectar a Drive"):
-        try:
-            _service_cached()
-            st.success("Conectado")
-        except Exception as e:
-            st.error(f"Error de autenticacion: {e}")
-
-    if 'drive_service' in st.session_state:
-        st.caption("Conectado")
+    try:
+        service = _service_cached()
+        st.success("Conectado a Drive")
+        cuenta = _cuenta_drive(service)
+        st.caption(f"Cuenta: {cuenta}")
+    except Exception as e:
+        st.error(f"Error de autenticacion: {e}")
+        if st.button("Reintentar"):
+            st.session_state.pop('drive_service', None)
+            st.rerun()
+        st.stop()
 
     st.divider()
     st.caption(f"Repo: {REPO_ROOT}")
@@ -262,29 +290,46 @@ if 'lote_resultado' not in st.session_state:
 
 # Step 1: elegir cohorte
 st.header("Paso 1 — Elegir cohorte")
-try:
-    service = _service_cached()
-except Exception as e:
-    st.error(f"No se pudo autenticar a Drive: {e}")
-    st.stop()
 
-subcarpetas = _listar_subcarpetas_drive(service, ROOT_FIRMA_ID)
+with st.spinner("Consultando carpetas del Drive…"):
+    subcarpetas = _subcarpetas_con_count(service, ROOT_FIRMA_ID)
+
 if not subcarpetas:
     st.warning("La carpeta raíz 'Firma' del Drive no tiene subcarpetas.")
     st.stop()
 
-opciones = {s['name']: s['id'] for s in subcarpetas}
-sel_nombre = st.selectbox(
-    "Subcarpeta dentro de 'Firma':",
-    options=list(opciones.keys()),
-    index=0,
+# Labels descriptivos con el count de PDFs por subcarpeta
+def _label(s):
+    if s['count'] < 0:
+        return f"{s['name']} (sin acceso)"
+    return f"{s['name']} — {s['count']} PDF{'' if s['count'] == 1 else 's'}"
+
+opciones_label = [_label(s) for s in subcarpetas]
+# Por default seleccionar la primera con PDFs > 0
+default_idx = next((i for i, s in enumerate(subcarpetas) if s['count'] > 0), 0)
+
+sel_label = st.selectbox(
+    "Subcarpeta dentro de 'Firma' del Drive CGR:",
+    options=opciones_label,
+    index=default_idx,
+    help="Las subcarpetas se ordenan por cantidad de PDFs (las con contenido primero).",
 )
-sel_id = opciones[sel_nombre]
+sel_idx = opciones_label.index(sel_label)
+sel = subcarpetas[sel_idx]
+sel_nombre = sel['name']
+sel_id = sel['id']
+
+if sel['count'] == 0:
+    st.info(f"La subcarpeta '{sel_nombre}' está vacía. Elegí otra del listado.")
 
 col_a, col_b = st.columns([1, 3])
 with col_a:
-    if st.button("📥 Bajar PDFs", use_container_width=True):
-        with st.spinner("Bajando del Drive…"):
+    btn_disabled = sel['count'] == 0
+    if st.button("Bajar PDFs",
+                 use_container_width=True,
+                 type="primary",
+                 disabled=btn_disabled):
+        with st.spinner(f"Bajando {sel['count']} PDFs del Drive…"):
             st.session_state.pdfs_bajados = _bajar_lote_a_input(service, sel_id)
             st.session_state.subcarpeta_seleccionada = sel_nombre
         st.success(f"Bajados {len(st.session_state.pdfs_bajados)} PDFs a data/input/")
