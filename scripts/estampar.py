@@ -46,10 +46,11 @@ def construir_qr_png(payload: str) -> bytes:
 
 
 def construir_payload_qr(campos: dict, hash_hex: str, hash_version: int) -> str:
-    """Payload compacto: solo nombre + hash + version. JSON estable."""
+    """Payload: nombre + curso + hash + version. JSON estable, sin espacios."""
     payload = {
         'v': hash_version,
         'nombre': campos.get('nombre', ''),
+        'curso': campos.get('curso', ''),
         'hash': hash_hex,
     }
     return json.dumps(payload, ensure_ascii=False, separators=(',', ':'))

@@ -1,6 +1,6 @@
 [project]
 name = "cert-firma-cc"
-version = "0.2.0"
+version = "0.2.1"
 description = "Hash + acta unica para certificados del Centro de Capacitacion CGR (piloto)"
 requires-python = ">=3.11"
 authors = [{name = "Alejandro Herrera Lopez"}]
