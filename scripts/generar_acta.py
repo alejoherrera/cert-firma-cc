@@ -185,7 +185,7 @@ def main():
         'errores': errores,
         'git_commit': git_commit_actual(),
         'hash_listado_json_sha256': hash_listado,
-        'firmante_acta_pendiente': 'Lic. Juan Alejandro Herrera Lopez',
+        'firmante_acta_pendiente': registros[0]['firmante'] if registros else None,
     }
     manifest_path = lote_dir / 'manifest.json'
     manifest_path.write_text(

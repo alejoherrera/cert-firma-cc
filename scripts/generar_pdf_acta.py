@@ -178,12 +178,15 @@ def construir_acta(lote_dir: Path) -> Path:
     ]))
     story.append(tabla)
 
-    # Pie firmable
+    # Pie firmable. El firmante y la jefatura se toman del propio certificado
+    # (registro 0 del lote) para que el acta sea consistente con el papel.
+    firmante_acta = registros[0]['firmante'] if registros else 'Centro de Capacitación CGR'
+    jefatura_acta = registros[0]['jefatura'] if registros else 'Unidad Centro de Capacitación'
     pie_html = (
         f"<para align='center'>"
         f"<b>El presente documento será firmado digitalmente por:</b><br/>"
-        f"<font color='#222D72'>Lic. Juan Alejandro Herrera López</font><br/>"
-        f"Jefatura A.I, Unidad Centro de Capacitación<br/>"
+        f"<font color='#222D72'>{firmante_acta}</font><br/>"
+        f"{jefatura_acta}<br/>"
         f"División de Gestión de Apoyo<br/>"
         f"Contraloría General de la República"
         f"</para>"

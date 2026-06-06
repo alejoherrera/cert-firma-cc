@@ -67,20 +67,39 @@ def _listar_subcarpetas_drive(service, parent_id: str):
     return resp.get('files', [])
 
 
-def _subcarpetas_con_count(service, parent_id: str):
-    """Devuelve lista de subcarpetas con count de PDFs por cada una.
+def _resolver_carpeta_pdfs(service, curso_id: str) -> str:
+    """Devuelve el id de la carpeta que contiene los PDFs a procesar.
 
-    Resultado: [{'name': ..., 'id': ..., 'count': N}, ...]
+    La estructura real es Firma -> <Curso>/ -> "Sin Firma"/ -> PDFs. Buscamos la
+    subcarpeta cuyo nombre contenga 'sin firma' (case-insensitive) y devolvemos su
+    id. Si no existe (estructura vieja con PDFs directos), devolvemos el propio curso.
+    Nunca devolvemos subcarpetas tipo 'Con Firma'/'Firmados'.
+    """
+    for sub in _listar_subcarpetas_drive(service, curso_id):
+        if 'sin firma' in sub['name'].lower():
+            return sub['id']
+    return curso_id
+
+
+def _subcarpetas_con_count(service, parent_id: str):
+    """Devuelve lista de cursos con count de PDFs de su subcarpeta 'Sin Firma'.
+
+    Resultado: [{'name': ..., 'id': ..., 'pdf_folder_id': ..., 'count': N}, ...]
+    'id' es la carpeta de curso (lo que ve el usuario); 'pdf_folder_id' es de donde
+    se bajan los PDFs (la subcarpeta 'Sin Firma', o el propio curso como fallback).
     Ordenado por count descendente (las que tienen PDFs primero).
     """
     subs = _listar_subcarpetas_drive(service, parent_id)
     resultado = []
     for s in subs:
         try:
-            pdfs = listar_pdfs(service, s['id'])
-            resultado.append({'name': s['name'], 'id': s['id'], 'count': len(pdfs)})
+            pdf_folder_id = _resolver_carpeta_pdfs(service, s['id'])
+            pdfs = listar_pdfs(service, pdf_folder_id)
+            resultado.append({'name': s['name'], 'id': s['id'],
+                              'pdf_folder_id': pdf_folder_id, 'count': len(pdfs)})
         except Exception:
-            resultado.append({'name': s['name'], 'id': s['id'], 'count': -1})
+            resultado.append({'name': s['name'], 'id': s['id'],
+                              'pdf_folder_id': s['id'], 'count': -1})
     resultado.sort(key=lambda x: (-x['count'], x['name']))
     return resultado
 
@@ -206,7 +225,7 @@ def _procesar_lote(curso: str, status_cb=None):
         'errores': errores,
         'git_commit': git_commit_actual(),
         'hash_listado_json_sha256': hash_listado,
-        'firmante_acta_pendiente': 'Lic. Juan Alejandro Herrera Lopez',
+        'firmante_acta_pendiente': registros[0]['firmante'] if registros else None,
     }
     (lote_dir / 'manifest.json').write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2), encoding='utf-8')
@@ -246,7 +265,7 @@ with col1:
     st.title("cert-firma-cc")
     st.caption("Centro de Capacitación CGR — pipeline de hash + acta única")
 with col2:
-    st.markdown("**v0.3.0**")
+    st.markdown("**v0.4.0**")
 
 st.divider()
 
@@ -330,7 +349,7 @@ with col_a:
                  type="primary",
                  disabled=btn_disabled):
         with st.spinner(f"Bajando {sel['count']} PDFs del Drive…"):
-            st.session_state.pdfs_bajados = _bajar_lote_a_input(service, sel_id)
+            st.session_state.pdfs_bajados = _bajar_lote_a_input(service, sel['pdf_folder_id'])
             st.session_state.subcarpeta_seleccionada = sel_nombre
         st.success(f"Bajados {len(st.session_state.pdfs_bajados)} PDFs a data/input/")
 
