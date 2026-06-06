@@ -1,7 +1,7 @@
 # Constitución — cert-firma-cc
 
-**Versión:** 1.1.0
-**Fecha:** 2026-05-26
+**Versión:** 2.0.0
+**Fecha:** 2026-06-05 (versión inicial 2026-05-26)
 **Responsable institucional:** Lic. Juan Alejandro Herrera López, Jefatura A.I, Centro de Capacitación CGR
 
 Documento fundacional del proyecto. Toda spec posterior debe declarar cumplimiento constitucional al inicio.
@@ -31,9 +31,21 @@ Cada certificado lleva impreso su propio hash criptográfico, permitiendo verifi
 | Drive | `google-api-python-client` + OAuth token existente | Mismo mecanismo que `resoluciones_DCP` |
 | Acta firmable | **Fuera del scope del sistema** | El responsable arma el acta y la firma con el cliente del BCCR |
 
+**Enmienda 2.0.0 (2026-06-05, ADR-0002):** se incorpora **Google Apps Script (JavaScript, runtime
+V8)** como runtime de producción del pipeline, en adición a Python. El motor Python/PyMuPDF **no se
+elimina**: permanece como oráculo de verificación/auditoría y fallback (ver ADR-0002 §Mitigación).
+El hash se reimplementa en JS con paridad byte-a-byte exigida contra la implementación Python.
+
 ## 4. Reglas de datos y seguridad
 
 1. **Originales en Drive son intocables.** El sistema opera readonly desde Drive y escribe únicamente a `data/output/` local. Si en algún momento se necesita escribir a Drive, requiere enmienda constitucional.
+
+   **Enmienda 2.0.0 (2026-06-05, ADR-0002):** se autoriza que el runtime Apps Script **escriba a
+   Drive** dentro del Workspace `cgr.go.cr` — exclusivamente PDF estampados (overlay, no alteran el
+   texto original) y la hoja/acta del lote en carpetas de salida; **nunca** sobre los PDF
+   originales de matrícula (siguen intocables: solo `list`/`get`/copia). Scope OAuth ampliado a
+   `drive` + `spreadsheets`. El PII permanece dentro del Workspace institucional donde ya residen
+   los originales. **Riesgo de verificabilidad asumido** por el firmante: ver ADR-0002 §Riesgo.
 2. **PII (cédulas, nombres) jamás se commitea.** `data/input/`, `data/output/` y `data/participantes*.csv` están en `.gitignore`. Auditar el repo previo a cada `git push`.
 3. **Hash canónico SHA-256.** Algoritmo y formato del string canónico definidos en el spec del feature. Cambios al string canónico = nueva versión del campo de hash en el cert + ADR explicando migración.
 4. **Trazabilidad del lote.** Cada ejecución produce: PDFs estampados, `listado_hashes.csv`, `listado_hashes.json`, y un `manifest.json` con timestamp, git commit, versión del string canónico, total de certificados, hash del propio listado.
@@ -82,3 +94,8 @@ Cada certificado lleva impreso su propio hash criptográfico, permitiendo verifi
 
 - **1.0.0 — 2026-05-26** — Versión inicial. Proyecto greenfield, fase piloto.
 - **1.1.0 — 2026-05-26** — §7 actualizado: el string canónico v1 NO incluye cédula. Decisión documentada en ADR-0001. Razón: mantener el diseño histórico del certificado intacto + verificabilidad por tercero con solo el papel.
+- **2.0.0 — 2026-06-05** — Cambio incompatible. Pivot de runtime a Google Apps Script (ADR-0002):
+  §3 incorpora Apps Script como runtime (Python queda como oráculo/fallback); §4.1 autoriza
+  escritura a Drive (PDF estampados + acta Sheet) dentro del Workspace `cgr.go.cr` con scope OAuth
+  ampliado. El firmante asume explícitamente el riesgo de verificabilidad de calcular el hash desde
+  datos reconstruidos en vez del texto impreso, mitigado por auditoría con `verificar.py`.

@@ -1,6 +1,6 @@
 # Mapa del pipeline — cert-firma-cc
 
-**Última actualización:** 2026-05-29 (estado real: QR, app Streamlit, actas PDF/Excel, verificación, QA)
+**Última actualización:** 2026-06-05 (app v0.4.0 navega Curso→Sin Firma; pivot a Google Apps Script en construcción, ADR-0002)
 **Creación original:** 2026-05-26
 
 ```mermaid
@@ -76,6 +76,23 @@ flowchart LR
   - `python scripts/verificar.py <pdf_estampado> [<hash_esperado>]`
   - `python scripts/qa_suite.py [lote_dir] [--lote-previo <dir>]`
 - No hay endpoints HTTP, ni cron jobs, ni MCP server en esta fase.
+
+## Pivot a Google Apps Script (en construcción — ADR-0002, 2026-06-05)
+
+Por decisión del firmante (CONSTITUTION 2.0.0), el runtime de producción migra a **Google Apps
+Script puro**: hoja de control (matrícula + 7 constantes de cohorte) → hash en JS → estampado con
+`PDFApp`/pdf-lib + QR → acta publicada a un Google Sheet compartible. El generador de certificados
+es externo/manual, por eso GAS reconstruye los campos (riesgo de verificabilidad asumido, ADR-0002).
+
+| Componente | Estado | Responsabilidad |
+|---|---|---|
+| `gas/canonical_hash.js` | en construcción | String canónico v1 + SHA-256 en JS, portable GAS/Node. Paridad probada con Python |
+| `gas/test_parity.mjs` | listo | Test JS↔Python sobre el listado real (2/2 OK, 2026-06-05) |
+| `scripts/verificar.py` (PyMuPDF) | **oráculo de auditoría** | Gate obligatorio: valida que el hash estampado por GAS coincide con el texto del papel, antes de firmar |
+
+**Plan de slices:** (1) hash JS + paridad [HECHO] · (2) GAS lee matrícula+constantes → listado a
+Sheet · (3) estampado en GAS (PDFApp + QR) → PDFs a Drive · (4) acta como Sheet compartible · (5)
+gate de auditoría con `verificar.py` sobre PDFs estampados por GAS.
 
 ## Documentos de proceso y calidad
 
