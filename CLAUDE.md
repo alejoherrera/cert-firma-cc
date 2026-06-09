@@ -25,7 +25,7 @@ cert-firma-cc/
     bajar_certificados.py  # Drive readonly -> data/input/
     extraer_campos.py      # parser PyMuPDF por anchor strings
     smoke_extractor.py     # valida extractor contra 1 PDF real
-    calcular_hash.py       # string canonico v1 + SHA-256
+    calcular_hash.py       # string canonico v2 + SHA-256
     estampar.py            # overlay leyenda+hash+QR sobre PDF
     generar_acta.py        # orquestador end-to-end del lote
     generar_pdf_acta.py    # PDF tabular del acta (firmable BCCR)
@@ -43,10 +43,13 @@ cert-firma-cc/
 
 1. **Nunca tocar originales en Drive.** Token scope es `drive.readonly`. Aun asi: no llamar `files().update()`, `files().delete()` ni equivalentes. Solo `files().list()` y `files().get_media()`.
 2. **PII fuera del git.** Antes de cualquier commit: `git status` no debe mostrar `data/` ni `*.csv` con cedulas/nombres.
-3. **String canonico del hash v1** (segun CONSTITUTION §7 + ADR-0001):
-   `nombre_normalizado|curso|periodo|horas|modalidad|fecha_emision|firmante|jefatura`
-   normalizado a NFC + lowercase + trim por campo. **NO incluye cedula** ni dato externo al PDF.
+3. **String canonico del hash v2** (segun CONSTITUTION §7 + ADR-0001 + ADR-0003):
+   `nombre_normalizado|curso|periodo|horas|modalidad|firmante|jefatura`
+   normalizado a NFC + lowercase + trim por campo. **NO incluye cedula** (ADR-0001) **ni
+   fecha_emision** (ADR-0003) ni dato externo al PDF. `fecha_emision` sigue siendo dato visible del
+   acta/cert, solo NO entra al hash. `hash_version = 2`.
    Cambiar la formula = bump hash_version + nueva ADR.
+   (v1 historico, superado: incluia `fecha_emision`; lotes v1 quedan inmutables, `hash_version=1`.)
 4. **Smoke extractor obligatorio** antes de pipeline completo (regla global responsable).
 5. **Encoding Windows:** sin emojis en print/log (`[OK]`, `[ERROR]`).
 6. **Cuando este listo para commit:** verificar `.gitignore` cubre lo que corresponde; jamas `git add -A`.

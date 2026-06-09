@@ -23,7 +23,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from extraer_campos import extraer
-from calcular_hash import calcular, string_canonico, HASH_VERSION, CAMPOS_CANONICOS_V1
+from calcular_hash import calcular, string_canonico, HASH_VERSION, CAMPOS_CANONICOS
 from estampar import estampar_acta_firmada
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -94,7 +94,7 @@ def main():
     log(f"[INFO] Lote: {lote_dir.name}")
     log(f"[INFO] Input: {args.input_dir} ({len(pdfs)} PDFs)")
     log(f"[INFO] Hash version: v{HASH_VERSION}")
-    log(f"[INFO] Campos canonicos: {CAMPOS_CANONICOS_V1}")
+    log(f"[INFO] Campos canonicos: {CAMPOS_CANONICOS}")
     log(f"[INFO] Timestamp UTC: {ts_utc.isoformat()}")
     log(f"[INFO] Git commit: {git_commit_actual()}")
     log("")
@@ -178,7 +178,7 @@ def main():
         'timestamp_utc': ts_utc.isoformat(),
         'timestamp_local': ts_local.isoformat(),
         'hash_version': HASH_VERSION,
-        'campos_canonicos': CAMPOS_CANONICOS_V1,
+        'campos_canonicos': CAMPOS_CANONICOS,
         'curso': args.curso,
         'total_certificados': len(registros),
         'total_errores': len(errores),

@@ -1,7 +1,7 @@
 # Constitución — cert-firma-cc
 
-**Versión:** 2.0.0
-**Fecha:** 2026-06-05 (versión inicial 2026-05-26)
+**Versión:** 3.0.0
+**Fecha:** 2026-06-09 (versión inicial 2026-05-26)
 **Responsable institucional:** Lic. Juan Alejandro Herrera López, Jefatura A.I, Centro de Capacitación CGR
 
 Documento fundacional del proyecto. Toda spec posterior debe declarar cumplimiento constitucional al inicio.
@@ -68,10 +68,17 @@ El hash se reimplementa en JS con paridad byte-a-byte exigida contra la implemen
 ## 7. Reglas de negocio codificadas
 
 - **Alcance del acta:** una acta por curso/grupo terminado (decidido 2026-05-26).
-- **String canónico del hash (v1):** `nombre_normalizado|curso|periodo|horas|modalidad|fecha_emision|firmante|jefatura`
+- **String canónico del hash (v2, ACTIVO — ADR-0003, 2026-06-09):**
+  `nombre_normalizado|curso|periodo|horas|modalidad|firmante|jefatura`
   - Normalización: NFC, lowercase, trim por campo, separador `|` literal.
-  - **Solo datos visibles en el certificado.** No incluye cédula ni ningún dato externo al PDF (ver `docs/architecture/adr-0001-hash-sin-cedula.md`).
-  - `hash_version = 1`. Si en el futuro se altera la fórmula: nueva ADR + bump de `hash_version` en el cert y el listado.
+  - **Solo datos visibles en el certificado.** No incluye cédula (ADR-0001) ni `fecha_emision`
+    (ADR-0003) ni ningún dato externo al PDF. `fecha_emision` se sigue mostrando en el acta y el
+    cert, pero **no entra al hash**.
+  - `hash_version = 2`. Si en el futuro se altera la fórmula: nueva ADR + bump de `hash_version`.
+- **String canónico del hash (v1, SUPERADO por v2 — histórico):**
+  `nombre_normalizado|curso|periodo|horas|modalidad|fecha_emision|firmante|jefatura`
+  - Vigente 2026-05-26 → 2026-06-09 (ADR-0001). Incluía `fecha_emision`. Los lotes v1 ya estampados
+    (mayo 2026, ninguno firmado) quedan inmutables y se identifican por `hash_version = 1`.
 - **Identificador único de persona:** no hay. Se asume que en un curso/cohorte la combinación nombre+curso+período es prácticamente única (justificación en ADR-0001). Si aparece colisión real, se gestiona caso por caso emitiendo un correlativo manual.
 - **Mostrar el hash al lector:** sí (posición a definir en spec del feature inicial). El hash invisible (solo metadata) está prohibido en la fase piloto: el responsable quiere que un humano pueda leer el hash en papel.
 - **Verificabilidad por tercero:** un tercero debe poder recalcular el hash leyendo únicamente el certificado en papel (sin acceso a bases externas). Por eso el string canónico solo usa datos visibles.
@@ -99,3 +106,8 @@ El hash se reimplementa en JS con paridad byte-a-byte exigida contra la implemen
   escritura a Drive (PDF estampados + acta Sheet) dentro del Workspace `cgr.go.cr` con scope OAuth
   ampliado. El firmante asume explícitamente el riesgo de verificabilidad de calcular el hash desde
   datos reconstruidos en vez del texto impreso, mitigado por auditoría con `verificar.py`.
+- **3.0.0 — 2026-06-09** — Cambio incompatible de fórmula de hash (ADR-0003). §7: el string canónico
+  pasa a **v2 (7 campos)**, removiendo `fecha_emision`. Razón: el CSV de matrícula no trae fecha y
+  la fecha varía por participante, lo que hacía imposible reconstruirla idéntica al papel sin parsear
+  el PDF; quitarla de-riesga la verificabilidad de ADR-0002. Trade-off asumido por el firmante: el
+  hash deja de atestiguar la fecha de emisión. Lotes v1 quedan inmutables (`hash_version=1`).

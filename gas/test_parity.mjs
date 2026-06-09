@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const { stringCanonico, calcular } = require('./canonical_hash.js');
+const { stringCanonico, calcular, HASH_VERSION } = require('./canonical_hash.js');
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 const outBase = join(repoRoot, 'data', 'output');
@@ -31,12 +31,21 @@ if (!lotes.length) {
 const listado = join(outBase, lotes[0], 'listado_hashes.json');
 const registros = JSON.parse(readFileSync(listado, 'utf8'));
 
+// Guard: el lote leido debe ser de la version de hash actual. Un listado viejo
+// (p.ej. v1, con fecha_emision en el hash) daria falsos FAIL silenciosos.
+const verLote = registros[0] && registros[0].hash_version;
+if (verLote !== HASH_VERSION) {
+  console.error(`[ERROR] El lote ${lotes[0]} es hash_version=${verLote}, ` +
+    `pero la implementacion es v${HASH_VERSION}. Regenera el lote con generar_acta.py.`);
+  process.exit(2);
+}
+
 let fallos = 0;
 for (const r of registros) {
+  // v2 (ADR-0003): sin fecha_emision en el hash.
   const campos = {
     nombre: r.nombre, curso: r.curso, periodo: r.periodo, horas: r.horas,
-    modalidad: r.modalidad, fecha_emision: r.fecha_emision,
-    firmante: r.firmante, jefatura: r.jefatura,
+    modalidad: r.modalidad, firmante: r.firmante, jefatura: r.jefatura,
   };
   const canonJs = stringCanonico(campos);
   const hashJs = calcular(campos);

@@ -1,6 +1,6 @@
 # Mapa del pipeline — cert-firma-cc
 
-**Última actualización:** 2026-06-05 (app v0.4.0 navega Curso→Sin Firma; pivot a Google Apps Script en construcción, ADR-0002)
+**Última actualización:** 2026-06-09 (hash v2 sin fecha_emision, ADR-0003; spec slice 2 GAS lista para implementar)
 **Creación original:** 2026-05-26
 
 ```mermaid
@@ -9,7 +9,7 @@ flowchart LR
     Token[token_cgr.json<br/>readonly]
     Input[data/input/<br/>copias locales]
     Extractor[scripts/extraer_campos.py<br/>PyMuPDF: 8 campos visibles]
-    Hash[scripts/calcular_hash.py<br/>SHA-256 v1 string canonico<br/>solo datos del PDF]
+    Hash[scripts/calcular_hash.py<br/>SHA-256 v2 string canonico 7 campos<br/>sin cedula ni fecha_emision]
     Stamper[scripts/estampar.py<br/>overlay PyMuPDF: leyenda + hash + QR]
     Output[data/output/lote_TS/<br/>PDFs estampados + listado + manifest]
     ActaPDF[scripts/generar_pdf_acta.py<br/>acta.pdf firmable]

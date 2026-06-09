@@ -25,7 +25,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from extraer_campos import extraer
-from calcular_hash import calcular, CAMPOS_CANONICOS_V1
+from calcular_hash import calcular, CAMPOS_CANONICOS
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 OUTPUT_BASE = REPO_ROOT / 'data' / 'output'
@@ -79,7 +79,7 @@ def qa02_determinismo(lote_dir: Path, registros: list[dict]) -> Resultado:
     """calcular() sobre los campos registrados reproduce el hash guardado."""
     fallos = []
     for r in registros:
-        campos = {c: r[c] for c in CAMPOS_CANONICOS_V1}
+        campos = {c: r[c] for c in CAMPOS_CANONICOS}
         h = calcular(campos)
         if h != r['hash_sha256']:
             fallos.append(f"{safe(r['nombre'])}: {h[:12]}!={r['hash_sha256'][:12]}")
@@ -188,7 +188,7 @@ def qa07_avalancha(registros: list[dict]) -> Resultado:
     if not registros:
         return Resultado('QA-07', 'Sensibilidad (avalancha)', False, critico=True,
                          detalle='sin registros')
-    base = {c: registros[0][c] for c in CAMPOS_CANONICOS_V1}
+    base = {c: registros[0][c] for c in CAMPOS_CANONICOS}
     h0 = calcular(base)
     alterado = dict(base)
     alterado['curso'] = base['curso'] + 'x'
@@ -203,11 +203,11 @@ def qa08_nfc(registros: list[dict]) -> Resultado:
     if not registros:
         return Resultado('QA-08', 'Normalizacion NFC', False, critico=True,
                          detalle='sin registros')
-    base = {c: registros[0][c] for c in CAMPOS_CANONICOS_V1}
+    base = {c: registros[0][c] for c in CAMPOS_CANONICOS}
     nfd = {c: unicodedata.normalize('NFD', v) for c, v in base.items()}
     ok = calcular(base) == calcular(nfd)
     # confirmar que la prueba es significativa (que habia algo que normalizar)
-    significativo = any(base[c] != nfd[c] for c in CAMPOS_CANONICOS_V1)
+    significativo = any(base[c] != nfd[c] for c in CAMPOS_CANONICOS)
     return Resultado('QA-08', 'Normalizacion NFC', ok, critico=True,
                      detalle=f"NFC==NFD hash: {ok}; prueba significativa (habia acentos): {significativo}")
 

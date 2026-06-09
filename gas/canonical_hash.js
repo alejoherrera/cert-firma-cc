@@ -1,6 +1,6 @@
 /**
- * String canonico v1 + SHA-256 en JavaScript, paridad exacta con
- * scripts/calcular_hash.py (CONSTITUTION 7 + ADR-0001).
+ * String canonico v2 + SHA-256 en JavaScript, paridad exacta con
+ * scripts/calcular_hash.py (CONSTITUTION 7 + ADR-0001 + ADR-0003).
  *
  * Portable: corre en Google Apps Script (runtime V8) y en Node.
  * - Construccion del string canonico: identica en ambos.
@@ -8,30 +8,33 @@
  *
  * El hash debe coincidir byte-a-byte con la implementacion Python; ver
  * gas/test_parity.mjs y ADR-0002 (gate de auditoria).
+ *
+ * v2 (ADR-0003): se removio fecha_emision del hash. Sigue siendo dato visible
+ * del acta, solo NO entra al string canonico.
  */
 
-// Orden NO-negociable de los 8 campos (igual que CAMPOS_CANONICOS_V1 en Python).
-var CAMPOS_CANONICOS_V1 = [
+// Orden NO-negociable de los 7 campos v2 (igual que CAMPOS_CANONICOS en Python).
+var CAMPOS_CANONICOS = [
   'nombre', 'curso', 'periodo', 'horas', 'modalidad',
-  'fecha_emision', 'firmante', 'jefatura',
+  'firmante', 'jefatura',
 ];
 
-var HASH_VERSION = 1;
+var HASH_VERSION = 2;
 
 /** NFC -> trim -> lowercase, igual que _norm() en Python (normalize, strip, lower). */
 function norm(s) {
   return String(s).normalize('NFC').trim().toLowerCase();
 }
 
-/** Construye el string canonico desde un objeto con los 8 campos. */
+/** Construye el string canonico v2 desde un objeto (campos extra se ignoran). */
 function stringCanonico(campos) {
-  var missing = CAMPOS_CANONICOS_V1.filter(function (c) {
+  var missing = CAMPOS_CANONICOS.filter(function (c) {
     return !(c in campos);
   });
   if (missing.length) {
     throw new Error('Faltan campos canonicos: ' + missing.join(', '));
   }
-  return CAMPOS_CANONICOS_V1.map(function (c) {
+  return CAMPOS_CANONICOS.map(function (c) {
     return norm(campos[c]);
   }).join('|');
 }
@@ -61,5 +64,5 @@ function calcular(campos) {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { CAMPOS_CANONICOS_V1, HASH_VERSION, norm, stringCanonico, calcular };
+  module.exports = { CAMPOS_CANONICOS, HASH_VERSION, norm, stringCanonico, calcular };
 }
